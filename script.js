@@ -2,7 +2,7 @@ let map, pos, places, foods, drinks, infoWindow, marker, lastMarker;
 
 function initMap() {
   if (navigator.geolocation) {
-    // 取得座標
+    // Get coords
     navigator.geolocation.getCurrentPosition(
       (position) => {
         pos = {
@@ -11,7 +11,7 @@ function initMap() {
         };
         console.log(pos);
 
-        // Google 地圖
+        // Create Google Map
         map = new google.maps.Map(document.getElementById("map"), {
           center: pos,
           zoom: 17,
@@ -19,10 +19,10 @@ function initMap() {
         map.setCenter(pos);
 
         nearbyFoods();
-        nearbyDrinks();
+        // nearbyDrinks();
 
         createButton("Food");
-        createButton("Drink");
+        // createButton("Drink");
       },
       // API error
       () => {
@@ -43,14 +43,14 @@ function initMap() {
   }
 }
 
-// 搜尋周圍地點
+// Nearby search
 function nearbyFoods() {
   const request = {
     location: pos,
     radius: "300",
     type: ["restaurant"],
     openNow: true,
-    maxPrice: 2,
+    maxPriceLevel: 2,
   };
   foodService = new google.maps.places.PlacesService(map);
   foodService.nearbySearch(request, setFoods);
@@ -59,25 +59,27 @@ function nearbyDrinks() {
   const request = {
     location: pos,
     radius: "300",
-    type: ["cafe"],
+    keyword: "飲料",
     openNow: true,
-    maxPrice: 2,
+    maxPriceLevel: 2,
   };
   drinkService = new google.maps.places.PlacesService(map);
   drinkService.nearbySearch(request, setDrinks);
 }
 
-// 儲存附近地點
-function setFoods(results) {
+// Set nearby locations array
+function setFoods(results, status) {
   console.log("Foods", results);
   foods = results;
+  console.log("status: ", status);
 }
-function setDrinks(results) {
+function setDrinks(results, status) {
   console.log("Drinks", results);
   drinks = results;
+  console.log("status: ", status);
 }
 
-// 產生隨機地標
+// Create random marker
 function randomMarker(event) {
   // 從 event 判斷不同按鈕拿不同的地點清單
   console.log(event.target.innerText);
@@ -88,39 +90,69 @@ function randomMarker(event) {
     case "Drink":
       places = drinks;
   }
-  
-  // 已無地點開嗆
+
   console.log(places);
-  if (!places.length) { return alert("這些都不要！？我看你還是自己想辦法好了 (´-ι_-｀)"); }
+  if (!places.length) {
+    // No result
+    if (!lastMarker) {
+      return alert("Nothing around you (´-ι_-｀)");
+    }
+    // No location left
+    return alert("Fancy nothing? You'd better find it yourself (´-ι_-｀)");
+  }
 
   let ranNum = Math.floor(Math.random() * places.length);
   let place = places[ranNum];
-  // if (!place.geometry || !place.geometry.location) return;
 
-  // 顯示過的地點從 places 拿掉
+  // Take the random place out of places array
   places.splice(ranNum, 1);
 
-  // 建立 Google 標記
+  // Create Google marker
   marker = new google.maps.Marker({
     map,
     position: place.geometry.location,
     title: place.name,
   });
 
-  // 將上個標記消除
+  // Delete last marker
   if (lastMarker) {
     lastMarker.setMap(null);
   }
 
-  // 複寫上個標記
+  // Overwrite lastMarker
   lastMarker = marker;
 
   marker.addListener("click", () => {
-    // 訊息視窗
+    // Create infoWindow
     infoWindow = new google.maps.InfoWindow();
     console.log(place);
-    infoWindow.setContent(place.name);
-    // 要加參數 anchor 才能開 ( anchor: marker )
+
+    // Build content div
+    const content = document.createElement("div");
+    // h3
+    const title = document.createElement("h3");
+    title.innerText = place.name;
+    content.appendChild(title);
+    // p
+    const price_rating = document.createElement("p");
+    let priceLevel = "";
+    switch (place.price_level) {
+      case 1:
+        priceLevel = "$";
+        break;
+      case 2:
+        priceLevel = "$$";
+        break;
+    }
+    price_rating.innerText = `${priceLevel} ${place.rating}`;
+    content.appendChild(price_rating);
+    // img
+    const img = document.createElement("img");
+    img.src = place.photos[0].getUrl({ maxWidth: 200, maxHeight: 200 });
+    content.appendChild(img);
+
+    infoWindow.setContent(content);
+    // Need parameter anchor to create marker ( anchor: marker )
     infoWindow.open(map, marker);
   });
 }
