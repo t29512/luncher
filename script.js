@@ -1,4 +1,4 @@
-let map, pos, places, foods, drinks, infoWindow, marker, lastMarker;
+let map, pos, user, places, foods, drinks, infoWindow, marker, lastMarker;
 
 function initMap() {
   if (navigator.geolocation) {
@@ -16,13 +16,25 @@ function initMap() {
           center: pos,
           zoom: 17,
         });
+
+        // Create current location user marker
+        const image = {
+          url: "https://cdn-icons-png.flaticon.com/512/1057/1057488.png",
+          scaledSize: new google.maps.Size(40, 40),
+        };
+        user = new google.maps.Marker({
+          map,
+          position: pos,
+          icon: image,
+        });
         map.setCenter(pos);
+        user.addListener("click", () => { map.setCenter(pos); });
 
         nearbyFoods();
-        // nearbyDrinks();
+        nearbyDrinks();
 
         createButton("Food");
-        // createButton("Drink");
+        createButton("Drink");
       },
       // API error
       () => {
@@ -37,8 +49,8 @@ function initMap() {
   function createButton(buttonText) {
     const button = document.createElement("button");
     button.textContent = buttonText;
-    button.classList.add("custom-map-control-button");
-    map.controls[google.maps.ControlPosition.CENTER].push(button);
+    button.classList.add("button");
+    map.controls[google.maps.ControlPosition.BOTTOM_CENTER].push(button);
     button.addEventListener("click", randomMarker);
   }
 }
@@ -114,10 +126,12 @@ function randomMarker(event) {
     title: place.name,
   });
 
+  // Center map at a bit north of the location
+  map.setCenter({ lng: place.geometry.location.lng(), lat: place.geometry.location.lat() + 0.001 });
+  console.log(place.geometry.location.lng(), place.geometry.location.lat() + 0.001);
+
   // Delete last marker
-  if (lastMarker) {
-    lastMarker.setMap(null);
-  }
+  if (lastMarker) { lastMarker.setMap(null); }
 
   // Overwrite lastMarker
   lastMarker = marker;
