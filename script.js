@@ -18,14 +18,13 @@ function initMap() {
         });
 
         // Create current location user marker
-        const image = {
-          url: "https://cdn-icons-png.flaticon.com/512/1057/1057488.png",
-          scaledSize: new google.maps.Size(40, 40),
-        };
         user = new google.maps.Marker({
           map,
           position: pos,
-          icon: image,
+          icon: {
+            url: "https://cdn-icons-png.flaticon.com/512/1057/1057488.png",
+            scaledSize: new google.maps.Size(40, 40),
+          }
         });
         map.setCenter(pos);
         user.addListener("click", () => { map.setCenter(pos); });
@@ -37,14 +36,10 @@ function initMap() {
         createButton("Drink");
       },
       // API error
-      () => {
-        handleLocationError(true, infoWindow, map.getCenter());
-      }
+      () => { handleLocationError(true, infoWindow, map.getCenter()); }
     );
-  } else {
     // Browser doesn't support Geolocation
-    handleLocationError(false, infoWindow, map.getCenter());
-  }
+  } else { handleLocationError(false, infoWindow, map.getCenter()); }
 
   function createButton(buttonText) {
     const button = document.createElement("button");
@@ -93,7 +88,7 @@ function setDrinks(results, status) {
 
 // Create random marker
 function randomMarker(event) {
-  // 從 event 判斷不同按鈕拿不同的地點清單
+  // Set location list by button name
   console.log(event.target.innerText);
   switch (event.target.innerText) {
     case "Food":
@@ -102,33 +97,41 @@ function randomMarker(event) {
     case "Drink":
       places = drinks;
   }
-
   console.log(places);
+
   if (!places.length) {
     // No result
-    if (!lastMarker) {
-      return alert("Nothing around you (´-ι_-｀)");
-    }
+    if (!lastMarker) { return alert("Nothing around you (´-ι_-｀)"); }
     // No location left
     return alert("Fancy nothing? You'd better find it yourself (´-ι_-｀)");
   }
-
+  
   let ranNum = Math.floor(Math.random() * places.length);
   let place = places[ranNum];
-
+  console.log(place);
+  
   // Take the random place out of places array
   places.splice(ranNum, 1);
-
+  
   // Create Google marker
   marker = new google.maps.Marker({
     map,
     position: place.geometry.location,
     title: place.name,
+    icon: {
+      // Different icon for different button
+      url: (event.target.innerText === 'Food')
+        ? "https://cdn-icons-png.flaticon.com/512/3081/3081078.png" 
+        : "https://cdn-icons-png.flaticon.com/512/3255/3255681.png",
+      scaledSize: new google.maps.Size(30, 30),
+    }
   });
 
   // Center map at a bit north of the location
-  map.setCenter({ lng: place.geometry.location.lng(), lat: place.geometry.location.lat() + 0.001 });
-  console.log(place.geometry.location.lng(), place.geometry.location.lat() + 0.001);
+  map.setCenter({
+    lng: place.geometry.location.lng(),
+    lat: place.geometry.location.lat() + 0.001,
+  });
 
   // Delete last marker
   if (lastMarker) { lastMarker.setMap(null); }
@@ -136,11 +139,14 @@ function randomMarker(event) {
   // Overwrite lastMarker
   lastMarker = marker;
 
-  marker.addListener("click", () => {
-    // Create infoWindow
-    infoWindow = new google.maps.InfoWindow();
-    console.log(place);
+  // Create infoWindow
+  infoWindow = new google.maps.InfoWindow();
 
+  // Set infoWindow content
+  setInfoWindow();
+  marker.addListener("click", () => { setInfoWindow(); });
+
+  function setInfoWindow() {
     // Build content div
     const content = document.createElement("div");
     // h3
@@ -168,7 +174,7 @@ function randomMarker(event) {
     infoWindow.setContent(content);
     // Need parameter anchor to create marker ( anchor: marker )
     infoWindow.open(map, marker);
-  });
+  }
 }
 
 function handleLocationError(browserHasGeolocation, infoWindow, pos) {
