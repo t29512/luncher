@@ -24,6 +24,7 @@ body {
   margin: 50px 80px;
   padding: 0 0.5em;
   font: 600 18px Roboto, Arial, sans-serif;
+  color: black;
   height: 40px;
   cursor: pointer;
 }
