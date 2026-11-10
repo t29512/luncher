@@ -10,15 +10,9 @@
   </head>
   <body>
     <div id="map"></div>
-    <!-- 
-     The `defer` attribute causes the callback to execute after the full HTML
-     document has been parsed. For non-blocking uses, avoiding race conditions,
-     and consistent behavior across browsers, consider loading using Promises
-     with https://www.npmjs.com/package/@googlemaps/js-api-loader.
-    -->
+    <!-- config.js holds the production API key (GitHub Pages) -->
+    <script src="config.js"></script>
+    <!-- script.js loads the Google Maps API itself; outside GitHub Pages it uses config.local.js instead -->
     <script src="script.js"></script>
-    <script async
-      src="https://maps.googleapis.com/maps/api/js?key=AIzaSyDANfL1KRYSVTTj5m5L_rDwiRkjcIw0w_Y&callback=initMap&libraries=places"
-    ></script>
   </body>
 </html>

@@ -188,3 +188,61 @@ function handleLocationError(browserHasGeolocation, infoWindow, pos) {
 }
 
 window.initMap = initMap;
+
+// Load the Google Maps API (calls initMap when ready).
+// Only the production host uses the key from config.js. Every other host
+// (localhost, Live Server, LAN IP...) must use the dev key in config.local.js
+// (gitignored), so the production key is never used outside GitHub Pages.
+const PROD_HOST = "t29512.github.io";
+const DEV_KEY_PLACEHOLDER = "LUNCHER_DEV_API_KEY";
+const PROD_CONFIG_FILE = "config.js";
+const LOCAL_CONFIG_FILE = "config.local.js";
+
+(function loadGoogleMaps() {
+  if (location.hostname === PROD_HOST) {
+    injectMapsScript(PROD_CONFIG_FILE);
+    return;
+  }
+  // Drop the production config, so a broken config.local.js (syntax error,
+  // not setting LUNCHER_CONFIG) can't silently fall back to the production key.
+  window.LUNCHER_CONFIG = undefined;
+  const localConfig = document.createElement("script");
+  localConfig.src = LOCAL_CONFIG_FILE;
+  localConfig.onload = () => injectMapsScript(LOCAL_CONFIG_FILE);
+  localConfig.onerror = () => {
+    showError(`找不到 ${LOCAL_CONFIG_FILE}：請把 config.local.example.js 複製成 ${LOCAL_CONFIG_FILE}，並填入 dev API key。`);
+  };
+  document.head.appendChild(localConfig);
+})();
+
+// configSourceLabel only names the config file in the error message;
+// the key itself is always read from window.LUNCHER_CONFIG.
+function injectMapsScript(configSourceLabel) {
+  const config = window.LUNCHER_CONFIG;
+  const key = config && config.mapsApiKey;
+  if (!key || key === DEV_KEY_PLACEHOLDER) {
+    showError(`${configSourceLabel} 沒有設定有效的 mapsApiKey（檔案可能有語法錯誤，或還是範例值），詳情請看 console。`);
+    return;
+  }
+  const script = document.createElement("script");
+  script.src =
+    "https://maps.googleapis.com/maps/api/js?key=" +
+    encodeURIComponent(key) +
+    "&loading=async&callback=initMap&libraries=places";
+  script.async = true;
+  document.head.appendChild(script);
+}
+
+// Google calls this when the key is rejected (e.g. RefererNotAllowedMapError).
+window.gm_authFailure = () => {
+  showError("Google Maps API key 驗證失敗：請確認這個網址已加入 key 的網站限制名單，詳情請看 console。");
+};
+
+// Show a visible error on the page instead of leaving it blank.
+function showError(message) {
+  console.error(message);
+  const box = document.createElement("div");
+  box.className = "error";
+  box.textContent = message;
+  document.body.appendChild(box);
+}
